@@ -22,7 +22,7 @@
  */
 
 #define BOOL int
-#define BYTE void
+#define BYTE unsigned char
 #define WINPR_API
 
 #define CopyMemory memcpy
