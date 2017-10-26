@@ -50,8 +50,6 @@ BOOL BipBuffer_AllocBuffer(wBipBuffer* bb, size_t size)
 	if (size < 1)
 		return FALSE;
 
-	size += size % bb->pageSize;
-
 	bb->buffer = (BYTE*) malloc(size);
 
 	if (!bb->buffer)
@@ -68,8 +66,6 @@ BOOL BipBuffer_Grow(wBipBuffer* bb, size_t size)
 	BYTE* buffer;
 	size_t blockSize = 0;
 	size_t commitSize = 0;
-
-	size += size % bb->pageSize;
 
 	if (size <= bb->size)
 		return TRUE;
@@ -407,15 +403,6 @@ wBipBuffer* BipBuffer_New(size_t size)
 
 	if (bb)
 	{
-		SYSTEM_INFO si;
-
-		GetSystemInfo(&si);
-
-		bb->pageSize = (size_t) si.dwPageSize;
-
-		if (bb->pageSize < 4096)
-			bb->pageSize = 4096;
-
 		if (!BipBuffer_AllocBuffer(bb, size))
 		{
 			free(bb);

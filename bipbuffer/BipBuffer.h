@@ -52,7 +52,6 @@ struct _wBipBuffer
 {
 	size_t size;
 	BYTE* buffer;
-	size_t pageSize;
 	wBipBlock blockA;
 	wBipBlock blockB;
 	wBipBlock readR;
