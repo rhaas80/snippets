@@ -17,14 +17,13 @@
  * limitations under the License.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/**
+ * Modified on 2017-10-25 by Roland Haas to by indepenendent of WinPR
+ */
 
-#include <winpr/crt.h>
-#include <winpr/sysinfo.h>
-
-#include <winpr/collections.h>
+#include "BipBuffer.h"
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * The Bip Buffer - The Circular Buffer with a Twist:
