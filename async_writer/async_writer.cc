@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
+#include <cerrno>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -11,14 +13,25 @@ async_writer::async_writer(FILE* out_fh, const size_t max_bytes_queued_) :
 {
   int bytes_mutex_init = pthread_mutex_init(&bytes_lock, NULL);
   int bytes_cond_init = pthread_cond_init(&bytes_wait, NULL);
-  assert(bytes_mutex_init == 0 && bytes_cond_init == 0);
+  if(bytes_mutex_init != 0 || bytes_cond_init != 0) {
+    fprintf(stderr, "Failed to initialize mutexes for bytes variable: %d %d\n",
+            bytes_mutex_init, bytes_cond_init);
+    exit(1);
+  }
   int queue_mutex_init = pthread_mutex_init(&queue_lock, NULL);
   int queue_cond_init = pthread_cond_init(&queue_wait, NULL);
-  assert(queue_mutex_init == 0 && queue_cond_init == 0);
+  if(queue_mutex_init != 0 || queue_cond_init != 0) {
+    fprintf(stderr, "Failed to initialize mutexes for queue variable: %d %d\n",
+            queue_mutex_init, queue_cond_init);
+    exit(1);
+  }
 
   int thread_create = pthread_create(&writer_thread, NULL, writer_func,
                                        static_cast<void*>(this));
-  assert(thread_create == 0);
+  if(thread_create != 0) {
+    fprintf(stderr, "Failed to create writer thread: %d\n", thread_create);
+    exit(1);
+  }
 };
 
 async_writer::~async_writer()
@@ -35,8 +48,11 @@ async_writer::~async_writer()
   pthread_mutex_unlock(&queue_lock);
   
   // this waits for writer thread to finish
-  int join = pthread_join(writer_thread, NULL);
-  assert(join == 0);
+  int join_ierr = pthread_join(writer_thread, NULL);
+  if(join_ierr != 0) {
+    fprintf(stderr, "Failed to join with writer thread: %d\n", join_ierr);
+    exit(1);
+  }
 }
 
 void async_writer::write(const void* buf, size_t count)
@@ -94,7 +110,11 @@ void async_writer::writer()
       case CMD_WRITE: {
         size_t written =
           fwrite(cmd_block.write_block.buf, 1, cmd_block.write_block.count, fh);
-        assert(written == cmd_block.write_block.count);
+        if(written != cmd_block.write_block.count) {
+          fprintf(stderr, "Could not write %zd bytes: %s\n",
+                  cmd_block.write_block.count, strerror(errno));
+          exit(1);
+        }
         free(const_cast<void*>(cmd_block.write_block.buf));
 
         pthread_mutex_lock(&bytes_lock);
@@ -104,16 +124,23 @@ void async_writer::writer()
         } break;
       case CMD_SEEK: {
         int seeked = fseek(fh, cmd_block.seek_block.offset, SEEK_SET);
-        assert(seeked == 0);
+        if(seeked != 0) {
+          fprintf(stderr, "Could not seek to position %ld: %s\n", cmd_block.seek_block.offset, strerror(errno));
+          exit(1);
+        }
         } break;
       case CMD_EXIT: {
         // not really required but keeps writes here rather than in caller
         int flushed = fflush(fh);
-        assert(flushed == 0);
+        if(flushed != 0) {
+          fprintf(stderr, "Could not flush: %s\n", strerror(errno));
+          exit(1);
+        }
         done = true;
         } break;
       default:
-        assert(0);
+        fprintf(stderr, "Invalid command %d\n", cmd_block.cmd_hdr.cmd);
+        exit(1);
         break;
     }
   }
