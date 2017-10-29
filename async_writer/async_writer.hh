@@ -27,6 +27,10 @@ class async_writer
     void seek(long offset);
     // flush command queue and wait for writer to finish
     void finalize();
+    // waits until there are at least bytes_available bytes to add to the queue,
+    // returns how many bytes are actually available to be written without
+    // blocking. It is an error to ask for more bytes than max_bytes_queued.
+    size_t select(const size_t bytes_available);
 
   private:
     // data types to keep track of what the writer end needs to do
@@ -66,6 +70,8 @@ class async_writer
     // protects access to queue and signals when a new work item is added
     pthread_mutex_t queue_lock;
     pthread_cond_t queue_wait;
+
+    bool thread_active;
     
     // these two functions implement the writer thread. The static one is
     // passed to pthread_create and wraps the member function

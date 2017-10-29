@@ -11,6 +11,7 @@ int main(void)
     writer.write(strdup("foo\n"), 4);
     writer.seek(1);
     writer.write(strdup("aa"), 2);
+    writer.finalize();
   }
   return 0;
 }
