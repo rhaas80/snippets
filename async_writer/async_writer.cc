@@ -36,23 +36,7 @@ async_writer::async_writer(FILE* out_fh, const size_t max_bytes_queued_) :
 
 async_writer::~async_writer()
 {
-  // make writer thread exit
-  cmd_block_t exit_cmd;
-  exit_cmd.exit_block.cmd = CMD_EXIT;
-
-  pthread_mutex_lock(&queue_lock);
-
-  cmd_queue.push(exit_cmd);
-
-  pthread_cond_signal(&queue_wait);
-  pthread_mutex_unlock(&queue_lock);
-  
-  // this waits for writer thread to finish
-  int join_ierr = pthread_join(writer_thread, NULL);
-  if(join_ierr != 0) {
-    fprintf(stderr, "Failed to join with writer thread: %d\n", join_ierr);
-    exit(1);
-  }
+  finalize();
 }
 
 void async_writer::write(const void* buf, size_t count)
@@ -87,6 +71,27 @@ void async_writer::seek(long offset)
 
   pthread_cond_signal(&queue_wait);
   pthread_mutex_unlock(&queue_lock);
+}
+
+void async_writer::finalize()
+{
+  // make writer thread exit
+  cmd_block_t exit_cmd;
+  exit_cmd.exit_block.cmd = CMD_EXIT;
+
+  pthread_mutex_lock(&queue_lock);
+
+  cmd_queue.push(exit_cmd);
+
+  pthread_cond_signal(&queue_wait);
+  pthread_mutex_unlock(&queue_lock);
+
+  // this waits for writer thread to finish
+  int join_ierr = pthread_join(writer_thread, NULL);
+  if(join_ierr != 0) {
+    fprintf(stderr, "Failed to join with writer thread: %d\n", join_ierr);
+    exit(1);
+  }
 }
 
 void* async_writer::writer_func(void* calldata)

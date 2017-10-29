@@ -23,7 +23,10 @@ class async_writer
     // write buf to file, free() memory once done ie. buf must be obtained from
     // malloc()
     void write(const void* buf, size_t count);
+    // seek to location offset in the file
     void seek(long offset);
+    // flush command queue and wait for writer to finish
+    void finalize();
 
   private:
     // data types to keep track of what the writer end needs to do
