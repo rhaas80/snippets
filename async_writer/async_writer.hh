@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <pthread.h>
 #include <queue>
 
@@ -20,9 +21,9 @@ class async_writer
     async_writer& operator=(const async_writer& other);
 
   public:
-    // write buf to file, free() memory once done ie. buf must be obtained from
-    // malloc()
-    void write(const void* buf, size_t count);
+    // write buf to file, call free_func() on block of memory once done
+    // it is NULL)
+    void write(const void* buf, size_t count, void (*free_func)(void*) = free);
     // seek to location offset in the file
     void seek(long offset);
     // flush command queue and wait for writer to finish
@@ -43,6 +44,7 @@ class async_writer
         cmd_name cmd;
         const void *buf;
         size_t count;
+        void (*free_func)(void*);
       } write_block;
       struct seek_block_t {
         cmd_name cmd;

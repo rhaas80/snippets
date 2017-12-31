@@ -43,7 +43,7 @@ async_writer::~async_writer()
   assert(!thread_active);
 }
 
-void async_writer::write(const void* buf, size_t count)
+void async_writer::write(const void* buf, size_t count, void (*free_func)(void*))
 {
   assert(thread_active);
 
@@ -51,6 +51,7 @@ void async_writer::write(const void* buf, size_t count)
   write_cmd.write_block.cmd = CMD_WRITE;
   write_cmd.write_block.count = count;
   write_cmd.write_block.buf = buf;
+  write_cmd.write_block.free_func = free_func;
 
   pthread_mutex_lock(&bytes_lock);
   while(bytes_queued >= max_bytes_queued)
@@ -147,7 +148,8 @@ void async_writer::writer()
                   cmd_block.write_block.count, strerror(errno));
           exit(1);
         }
-        free(const_cast<void*>(cmd_block.write_block.buf));
+        if(cmd_block.write_block.free_func)
+          cmd_block.write_block.free_func(const_cast<void*>(cmd_block.write_block.buf));
 
         pthread_mutex_lock(&bytes_lock);
         bytes_queued -= written;
