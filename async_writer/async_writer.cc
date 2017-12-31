@@ -40,6 +40,7 @@ async_writer::~async_writer()
 {
   if(thread_active)
     finalize();
+  assert(!thread_active);
 }
 
 void async_writer::write(const void* buf, size_t count)
