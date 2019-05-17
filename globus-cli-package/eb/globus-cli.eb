@@ -1,0 +1,72 @@
+# This file edited by Roland Haas <rhaas@ncsa.illinois.edu>
+# Last Change: Thu Jul 19 23:47 2018
+easyblock = 'ConfigureMake'
+
+name = 'globus-cli'
+version = '1.6.2'
+
+homepage = 'https://docs.globus.org/cli/'
+description = """Globus CLI, is a standalone application that can be installed on the user’s machine and used to access the Globus service.
+
+The CLI provides an interface to Globus services from the shell, and is suited to both interactive and simple scripting use cases."""
+
+toolchain = {'name': 'dummy', 'version': ''}
+
+# pythoon 3.7 cannot be used since its pip requires ctypes which don't work
+source_urls = [
+    'https://www.python.org/ftp/python/3.6.6/',
+]
+sources = [
+    'Python-3.6.6.tar.xz',
+]
+patches = [
+]
+checksums = [
+]
+
+builddependencies = [
+    ('OpenSSL',EXTERNAL_MODULE)
+]
+
+# RH: 208-07-19 setting --bindir and --install-scripts may not quite work
+import os
+# LD_PRELOAD=$EBROOTOPENSSL/lib/libssl.so 
+openssl = os.environ["EBROOTOPENSSL"]
+preconfigopts = "export LDFLAGS='-L%s/lib -Wl,--rpath,%s/lib' && export CFLAGS=-I%s/include &&" % (openssl, "%(installdir)s", openssl)
+configopts = "" # --bindir='${exec_prefix}/real-bin'
+# --install-option="--install-scripts=%(installdir)s/real-bin",
+postinstallcmds = [
+      """cd %(installdir)s
+         PATH=$PWD/bin:$PATH
+         bin/pip3 install globus-cli==1.6.2""",
+#      """cd %(installdir)s
+#         mv bin real-bin
+#         mkdir bin
+#         # write our own globus script that wipes python's import paths
+#         cat >bin/globus <<EOF
+##!%(installdir)s/real-bin/python3.6 -E
+#import sys
+## enforce all modules from %(installdir)s
+#sys.path = [p for p in sys.path if "%(installdir)s/lib/python3.6" in p]
+#exec(open("%(installdir)s/real-bin/globus").read())
+#EOF
+#         chmod ugo+rx bin/globus
+#"""
+]
+
+
+# The sanity test MUST be tuned before going production and submitting your contribution to upstream git repositories
+sanity_check_paths = {
+    'files': ['bin/globus'],
+    'dirs': ["."]
+}
+
+moduleclass = 'data'
+
+## conflict is pretty useless since the module system only detects a conflict
+## if two modules list *each* other as conflicts otherwise one can first load
+## ImageMagick and then bwpy and no conflict is reported :-(
+# not sure if there is a nice way of recording a conflict in EasyBuild but I
+# did not find anything it its fine manual
+modtclfooter = """
+"""
