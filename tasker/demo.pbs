@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -l nodes=2:xk:ppn=16
+#PBS -l walltime=00:30:00
+#PBS -q debug
+#PBS -N testjob
+
+# get hostname of rank 0
+ROOT_HOST=$(printf nid%05d $(head -n1 $PBS_NODEFILE))
+
+# port to listen to, pretty arbitrary and only used on a compute node
+PORT=9922
+
+# file with work items, one command line per line
+TASKS=tasks.txt
+
+# number of host listed in hostfile
+RANKS=$(wc -l <$PBS_NODEFILE)
+
+cd $PBS_O_WORKDIR
+
+aprun -n $RANKS -d 1 -cc none  tclsh tasker.tcl $TASKS $ROOT_HOST $PORT
