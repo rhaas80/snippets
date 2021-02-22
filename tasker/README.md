@@ -1,7 +1,7 @@
 tasker
 ======
 
-A very simple mind TCP based job server (no MPI)
+A very simple minded TCP based job scheduler (no MPI, base TCL only)
 
 ## Usage
 
