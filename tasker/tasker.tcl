@@ -16,7 +16,9 @@ proc Server {channel clientaddr clientport} {
     } else {
       puts $channel ""
       # forget about worker, it will quit soon
-      unset workers($workerid)
+      if [info exists workers($workerid)] then {
+        unset workers($workerid)
+      }
     }
 
     close $channel
