@@ -70,6 +70,8 @@ set server [lindex $::argv 1]
 # third argument is port to use
 set port [lindex $::argv 2]
 
+set exitOnError 1
+
 # MPI rank, rank 0 will be the manager
 set myid $::env(ALPS_APP_PE)
 
@@ -123,6 +125,15 @@ if {$myid == 0} then {
 
     # run command and store result
     set logfile "job$cmdid.log"
-    eval exec -- $cmd ">&" $logfile
+    if {[catch "exec -- $cmd >& $logfile"]} then {
+      puts "ERROR: process $myid failed in $cmd"
+      if $exitOnError then {
+        if {[lindex $errorCode 0] eq "CHILDSTATUS"} then {
+          exit [lindex $errorCode 2]
+        } else {
+          error "Unexpected error executing $cmd" $errorCode $errorInfo
+        }
+      }
+    }
   }  
 }
